@@ -1,9 +1,9 @@
 % Note: Flushing node and sink node are used interchangeably in the
 % comments.
 
-prompt = ['Specify the contamination source nodes',...
+prompt = ['Specify the contamination source node index x.',...
     '\nYou can specify single or multiple nodes.',...
-    '\nTo specify multiple nodes use [x y z] format    '];
+    '\nTo specify multiple nodes use [x y z] format:    '];
 
 consIDX=input(prompt);    % Specify the contamination source index
 
@@ -17,7 +17,7 @@ for III=1:length(consIDX)
 
     %% Initialize MATLAB-EPANET toolkit and get incidence matrix and other network parameters
 
-    start_toolkit();
+%     start_toolkit();
     fileName = 'CY_DMA2.inp';   % Insert name of EPANET .INP
     dispname='CY_DMA2';
     net = epanet(fileName);

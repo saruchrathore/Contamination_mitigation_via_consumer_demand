@@ -6,6 +6,7 @@ prompt = ['Do you want to run the (1)simulation test or (2)see the summary stati
     '\nPress "1" for simulation test or "2" for summary statistic results.    '];
 selection = input(prompt);   % Ask for running open loop simulation
 disp(' ');
+addpath(genpath(pwd));
 
 if selection==1
     disp('Running the simulation test. This might take some time')
