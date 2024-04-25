@@ -3,7 +3,7 @@ This repo contains the code for 'Contamination impact mitigation in water distri
 
 The code is essentially divided into two parts:
 1. Running simulation tests, with different contamination source nodes
-2. Presenting summary statistic results based on the saved result data from simulation tests.
+2. Presenting summary statistic results based on the saved result data from simulation tests. The results have been stored in 'Result_data'
 
 The code is written in MATLAB and would require the CasADi toolbox (https://web.casadi.org/) to run the simulation tests.
 
