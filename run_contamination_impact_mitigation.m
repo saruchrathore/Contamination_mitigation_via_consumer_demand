@@ -1,5 +1,9 @@
 clc; clear all; close all;
 
+%% Add dependencies folder to the search path
+
+addpath('dependencies')
+
 %% Would you like to run simulation test or see the summary 
 
 prompt = ['Do you want to run the (1)simulation test or (2)see the summary statistic results?',...
