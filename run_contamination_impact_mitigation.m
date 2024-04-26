@@ -2,7 +2,7 @@ clc; clear all; close all;
 
 %% Add dependencies folder to the search path
 
-addpath('dependencies')
+addpath(genpath('dependencies'))
 
 %% Would you like to run simulation test or see the summary 
 
