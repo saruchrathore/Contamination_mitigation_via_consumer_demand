@@ -130,7 +130,7 @@ end
 
 
 opti2.subject_to(dCon_var(dc_index_ExSink)>=dcOrig_par(dc_index_ExSink));
-opti2.subject_to(dcCon_var<=0);
+opti2.subject_to(dcCon_var(dc_index_ExSink)<=(1-demand_regulation)*dcOrig_par(dc_index_ExSink));
 
 % Constraint on the flushing flow
 

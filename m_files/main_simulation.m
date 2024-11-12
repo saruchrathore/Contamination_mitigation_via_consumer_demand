@@ -1,9 +1,9 @@
 % Note: Flushing node and sink node are used interchangeably in the
 % comments.
 
-prompt = ['Specify the contamination source node index x.',...
+prompt = ['Specify the contamination source nodes',...
     '\nYou can specify single or multiple nodes.',...
-    '\nTo specify multiple nodes use [x y z] format:    '];
+    '\nTo specify multiple nodes use [x y z] format    '];
 
 consIDX=input(prompt);    % Specify the contamination source index
 
@@ -17,7 +17,7 @@ for III=1:length(consIDX)
 
     %% Initialize MATLAB-EPANET toolkit and get incidence matrix and other network parameters
 
-%     start_toolkit();
+    start_toolkit();
     fileName = 'CY_DMA2.inp';   % Insert name of EPANET .INP
     dispname='CY_DMA2';
     net = epanet(fileName);
@@ -144,6 +144,10 @@ for III=1:length(consIDX)
     sim_hours=2*24;
     con_thres=1e-2;
 
+    % Maximum demand regulation
+
+    demand_regulation=0.5;  %[0-1]
+
     %% Creating Model of the network
 
     % Create network parameter variables for the graph theory based model
@@ -155,7 +159,7 @@ for III=1:length(consIDX)
     clearvars -except set_chord edge_tree non_ref_nodes ref_node m_H n_H  H_T_bar rho_fluid g ...
         dc_index dc_sym H_C_bar dc_index lambda F H B H_T z_bar z_n z node_name_graph dp_index...
         n_chords num_non_refs num_con num_sup node_name link_name contaminantIDX sinksIDX...
-        fileName n_contaminant consIDX Graph target_node sim_hours con_thres
+        fileName n_contaminant consIDX Graph target_node sim_hours con_thres demand_regulation
 
     sz = [length(sinksIDX) 15];
     varTypes = {'double','double','double','double','double','double','double','double','double','double','double','double','double','double','double'};
@@ -244,7 +248,27 @@ for III=1:length(consIDX)
             results(I_sink,10)={change_consumption_BF};
             results(I_sink,11)={change_percentage_BF};
             results(I_sink,14)={sim_time};
+            
+            % Nominal condition results
 
+            contaminant_nodes=double(nodal_quality30(:,1:2*sim_hours)>con_thres);
+            contaminant_links=double(link_quality30(:,1:2*sim_hours)>con_thres);
+            contaminant_water=sum(sum(contaminant_nodes.*nodal_demand30(:,1:2*sim_hours)*0.5));
+            
+            con_node=sum(contaminant_nodes);
+            time_nodeflushed=find(con_node,1,'last')+1;
+
+            con_link=sum(contaminant_links);
+            time_linkflushed=find(con_link,1,'last')+1;
+
+            time_flushed=max(time_nodeflushed,time_linkflushed);
+
+            if time_flushed>2*sim_hours
+                time_flushed=Inf;
+            end
+            
+            results(I_sink,2)={contaminant_water};
+            results(I_sink,7)={time_flushed};
         catch ME
 
             cprintf ('UnterminatedStrings',['Error with BF algorithm in sink node ', num2str(sinkIDX),'\n'])
@@ -363,7 +387,7 @@ for III=1:length(consIDX)
     %% Save results
 
     cd new_results
-    file_str=['Node',num2str(contaminantIDX),'_vn.mat'];
+    file_str=['Node',num2str(contaminantIDX),'_vnewresults.mat'];
     save(file_str,'results','Error_msgs_BF','Error_msgs_SP')
     cd ..
 

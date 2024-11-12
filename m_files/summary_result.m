@@ -32,6 +32,19 @@ contamination_node=setdiff(contamination_node,singleEntryRows);
 BF_best=zeros(length(contamination_node),6);
 SP_best=zeros(length(contamination_node),6);
 
+
+BF_NaN_results=0;
+SP_NaN_results=0;
+
+
+No_sol=0;
+
+BF_sol=0;
+BF_nominal_best=0;
+
+SP_sol=0;
+SP_nominal_best=0;
+
 % Selection of the most efficient flushing node and storing the results
 for i=1:length(contamination_node)
 
@@ -39,7 +52,7 @@ for i=1:length(contamination_node)
 
     % Load result data for contamination source node
     cd ..\Result_data
-    file_name=['Node',num2str(contamination_node(i)),'_v8.mat'];
+    file_name=['Node',num2str(contamination_node(i)),'_vn.mat'];
     load(file_name)%,'results')
     result_array=table2array(results);
     cd ..\M_files
@@ -49,31 +62,68 @@ for i=1:length(contamination_node)
     nom_row = find(all(~isnan(nominal_data), 2),1);
     nominal_data=nominal_data(nom_row,:);
 
+    if isempty(nominal_data)
+        nominal_data=zeros(1,2);
+        No_sol=No_sol+1;
+    end
+
     % Extract results for the breadth-first search approach
 
     BF_data=result_array(:,[1 3 5 8 11]);
     BF_data = BF_data(all(~isnan(BF_data), 2), :);
-    % Convert the result value to change in percentage
-    BF_data_percentage=BF_data;
-    BF_data_percentage(:,2)=(nominal_data(1,1)-BF_data(:,2))*100/nominal_data(1,1);
-    BF_data_percentage(:,4)=(nominal_data(1,2)-BF_data(:,4))*100/nominal_data(1,2);
-    % Select the most efficient flushing node and store the result
-    best_row=best_sink(BF_data_percentage,W_contchange,W_time,W_conchange);
-    BF_best(i,:)=[current_node BF_data_percentage(best_row,:)];
 
+    
+    if ~isempty(BF_data)
+        
+        BF_sol=BF_sol+1;
+
+        % Convert the result value to change in percentage
+        BF_data_percentage=BF_data;
+        BF_data_percentage(:,2)=(nominal_data(1,1)-BF_data(:,2))*100/nominal_data(1,1);
+        BF_data_percentage(:,4)=(nominal_data(1,2)-BF_data(:,4))*100/nominal_data(1,2);
+
+        BF_data_percentage=[BF_data_percentage; zeros(1,5)];
+        % Select the most efficient flushing node and store the result
+        best_row=best_sink(BF_data_percentage,W_contchange,W_time,W_conchange);
+        if all(BF_data_percentage(best_row,:) == 0)
+            BF_nominal_best=BF_nominal_best+1;
+        end
+
+        BF_best(i,:)=[current_node BF_data_percentage(best_row,:)];
+
+        BF_NaN_results=BF_NaN_results+(16-size(BF_data,1));
+    else
+        BF_best(i,:)=[current_node zeros(1,5)];
+    end
     % Extract results for the shortest path approach
 
     SP_data=result_array(:,[1 4 6 9 13]);
     SP_data = SP_data(all(~isnan(SP_data), 2), :);
-    % Convert the result value to change in percentage
-    SP_data_percentage=SP_data;
-    SP_data_percentage(:,2)=(nominal_data(1,1)-SP_data(:,2))*100/nominal_data(1,1);
-    SP_data_percentage(:,4)=(nominal_data(1,2)-SP_data(:,4))*100/nominal_data(1,2);
-    % Select the most efficient flushing node and store the result
-    best_row=best_sink(SP_data_percentage,W_contchange,W_time,W_conchange);
-    SP_best(i,:)=[current_node SP_data_percentage(best_row,:)];
 
+    if ~isempty(SP_data)
+
+        SP_sol=SP_sol+1;
+
+        % Convert the result value to change in percentage
+        SP_data_percentage=SP_data;
+        SP_data_percentage(:,2)=(nominal_data(1,1)-SP_data(:,2))*100/nominal_data(1,1);
+        SP_data_percentage(:,4)=(nominal_data(1,2)-SP_data(:,4))*100/nominal_data(1,2);
+
+        SP_data_percentage=[SP_data_percentage; zeros(1,5)];
+        % Select the most efficient flushing node and store the result
+        best_row=best_sink(SP_data_percentage,W_contchange,W_time,W_conchange);
+        
+        if all(SP_data_percentage(best_row,:) == 0)
+            SP_nominal_best=SP_nominal_best+1;
+        end
+
+        SP_best(i,:)=[current_node SP_data_percentage(best_row,:)];
+
+        SP_NaN_results=SP_NaN_results+(16-size(SP_data,1));
+    end
 end
+
+
 
 %% Plotting the summary statistics results using box plots
 
@@ -84,20 +134,72 @@ set(0, 'DefaultTextFontSize',12);
 set(0, 'DefaultAxesFontName','Times');
 
 % Box plot for percentage change in the contaminated water consumed
+
+con_water_comb=[BF_best(:,3);SP_best(:,3)];
+group = [ones(length(BF_best),1); 2*ones(length(SP_best),1)];
+
 figure
-boxplot([BF_best(:,3) SP_best(:,3)],'Labels',{'Breadth-first search','Shortest path'})
+boxplot(con_water_comb,group,'Labels',{'Breadth-first search','Shortest path'})
 xlabel('Pressure constraint identification approaches');ylabel('Percentage change')
 title('Percentage change in the contaminated water consumed');
 
+
 % Box plot for percentage change in the time until the network is
 % contaminant-free
+time_comb=[BF_best(:,5);SP_best(:,5)];
 figure
-boxplot([BF_best(:,5) SP_best(:,5)],'Labels',{'Breadth-first search','Shortest path'})
+boxplot(time_comb,group,'Labels',{'Breadth-first search','Shortest path'})
 xlabel('Pressure constraint identification approaches');ylabel('Percentage change')
 title('Percentage change in the time until the network is contaminant-free');
 
 % Box plot for percentage change in the consumption
+consumption_comb=[BF_best(:,6);SP_best(:,6)];
 figure
-boxplot([BF_best(:,6) SP_best(:,6)],'Labels',{'Breadth-first search','Shortest path'})
+boxplot(consumption_comb,group,'Labels',{'Breadth-first search','Shortest path'})
 xlabel('Pressure constraint identification approaches');ylabel('Percentage change')
 title('Percentage change in the consumption')
+
+
+%% Table of mean and median
+
+
+sz = [2 11];
+varTypes = {'double','double','double','double','double','double','double','double','double','double','double'};
+varNames = {'Contaminat consumed median', 'Contaminat consumed mean', 'Contaminat consumed std',...
+    'Time median', 'Time mean', 'Time std',...
+    'Demand median', 'Demand mean', 'Demand  std',...
+    'No Solution','Nominal best'};
+summary_table = table('Size',sz,'VariableTypes',varTypes,'VariableNames',varNames);
+
+
+summary_table(1,1)={median(BF_best(:,3))};
+summary_table(1,2)={mean(BF_best(:,3))};
+summary_table(1,3)={std(BF_best(:,3))};
+
+summary_table(1,4)={median(BF_best(:,5))};
+summary_table(1,5)={mean(BF_best(:,5))};
+summary_table(1,6)={std(BF_best(:,5))};
+
+summary_table(1,7)={median(BF_best(:,6))};
+summary_table(1,8)={mean(BF_best(:,6))};
+summary_table(1,9)={std(BF_best(:,6))};
+
+summary_table(1,10)={BF_sol};
+summary_table(1,11)={BF_nominal_best};
+
+
+summary_table(2,1)={median(SP_best(:,3))};
+summary_table(2,2)={mean(SP_best(:,3))};
+summary_table(2,3)={std(SP_best(:,3))};
+
+summary_table(2,4)={median(SP_best(:,5))};
+summary_table(2,5)={mean(SP_best(:,5))};
+summary_table(2,6)={std(SP_best(:,5))};
+
+summary_table(2,7)={median(SP_best(:,6))};
+summary_table(2,8)={mean(SP_best(:,6))};
+summary_table(2,9)={std(SP_best(:,6))};
+
+summary_table(2,10)={SP_sol};
+summary_table(2,11)={SP_nominal_best};
+
